@@ -1,4 +1,4 @@
 Flask
+openai==0.28.1
 python-docx
 python-dotenv
-openai
