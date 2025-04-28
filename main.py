@@ -4,7 +4,9 @@ import openai
 app = Flask(__name__)
 
 # Initialize OpenAI
-openai.api_key = "OPENAI_API_KEY"  # <<-- Replace this with your real OpenAI key
+import os
+openai.api_key = os.getenv("OPENAI_API_KEY")
+  # <<-- Replace this with your real OpenAI key
 
 @app.route("/", methods=["POST"])
 def generate_resume():
