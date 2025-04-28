@@ -1,125 +1,106 @@
-from flask import Flask, request, jsonify
 import openai
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Receiving all fields from the POST request
+full_name = request_data.get('full_name', '')
+current_job_title = request_data.get('current_job_title', '')
+address = request_data.get('address', '')
+phone_number = request_data.get('phone_number', '')
+email = request_data.get('email', '')
+summary = request_data.get('summary', '')
 
-app = Flask(__name__)
+current_company_name = request_data.get('current_company_name', '')
+current_job_start_date = request_data.get('current_job_start_date', '')
+current_job_description = request_data.get('current_job_description', '')
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
+previous_company_name = request_data.get('previous_company_name', '')
+previous_job_title = request_data.get('previous_job_title', '')
+previous_job_start_date = request_data.get('previous_job_start_date', '')
+previous_job_end_date = request_data.get('previous_job_end_date', '')
+previous_job_description = request_data.get('previous_job_description', '')
 
-@app.route('/', methods=['GET'])
-def home():
-    return 'Qadeer Resume Builder AI Engine is Live 🚀'
+old_company_name = request_data.get('old_company_name', '')
+old_job_title = request_data.get('old_job_title', '')
+old_job_start_date = request_data.get('old_job_start_date', '')
+old_job_end_date = request_data.get('old_job_end_date', '')
+old_job_description = request_data.get('old_job_description', '')
 
-@app.route('/generate-resume', methods=['POST'])
-def generate_resume():
-    data = request.get_json()
+first_university_major = request_data.get('1st_university_major', '')
+first_university_name = request_data.get('1st_univeristy_name', '')
+first_university_location = request_data.get('1st_university_location', '')
 
-    # Receive all fields from the form
-    full_name = data.get('full_name', '')
-    current_job_title = data.get('current_job_title', '')
-    address = data.get('address', '')
-    phone_number = data.get('phone_number', '')
-    email = data.get('email', '')
-    summary = data.get('summary', '')
-    current_company_name = data.get('current_company_name', '')
-    current_job_start_date = data.get('current_job_start_date', '')
-    current_job_description = data.get('current_job_description', '')
-    previous_company_name = data.get('previous_company_name', '')
-    previous_job_title = data.get('previous_job_title', '')
-    previous_job_start_date = data.get('previous_job_start_date', '')
-    previous_job_end_date = data.get('previous_job_end_date', '')
-    previous_job_description = data.get('previous_job_description', '')
-    old_company_name = data.get('old_company_name', '')
-    old_job_title = data.get('old_job_title', '')
-    old_job_start_date = data.get('old_job_start_date', '')
-    old_job_end_date = data.get('old_job_end_date', '')
-    old_job_description = data.get('old_job_description', '')
-    first_university_major = data.get('1st_university_major', '')
-    first_university_name = data.get('1st_university_name', '')
-    first_university_location = data.get('1st_university_location', '')
-    second_university_major = data.get('2nd_university_major', '')
-    second_university_name = data.get('2nd_university_name', '')
-    second_university_location = data.get('2nd_university_location', '')
-    skills = data.get('skills', '')
-    achievements = data.get('achievements', '')
-    languages = data.get('languages', '')
+second_university_major = request_data.get('2nd_university_major', '')
+second_university_name = request_data.get('2nd_univeristy_name', '')
+second_university_location = request_data.get('2nd_university_location', '')
 
-    # Generate enhanced resume parts using GPT-4
-    def ask_openai(prompt):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a professional resume writer. Make text professional, brief, and bullet point formatted where appropriate."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
-        )
-        return response['choices'][0]['message']['content']
+skills = request_data.get('skills', '')
+achievements = request_data.get('achievements', '')
+languages = request_data.get('languages', '')
 
-    # Prompts for AI
-    enhanced_summary = ask_openai(f"Rewrite this into a professional resume summary paragraph: {summary}")
+# Create the prompt dynamically
+user_data = f"""
+Please create a professional and powerful resume using the following details:
 
-    enhanced_current_job = ask_openai(
-        f"Create 3 professional bullet points describing the job role based on this input for a resume: {current_job_description}"
-    )
+Personal Information:
+- Full Name: {full_name}
+- Professional Title: {current_job_title}
+- Address: {address}
+- Phone Number: {phone_number}
+- Email: {email}
 
-    enhanced_previous_job = ask_openai(
-        f"Create 3 professional bullet points describing the previous job role based on this input for a resume: {previous_job_description}"
-    )
+Professional Summary:
+{summary}
 
-    enhanced_old_job = ask_openai(
-        f"Create 3 professional bullet points describing the older job role based on this input for a resume: {old_job_description}"
-    )
+Experience:
+- Current Company: {current_company_name}
+  - Job Title: {current_job_title}
+  - Start Date: {current_job_start_date}
+  - Description: {current_job_description}
 
-    enhanced_skills = ask_openai(
-        f"Organize these skills into a clean professional bullet list for a resume: {skills}"
-    )
+- Previous Company: {previous_company_name}
+  - Job Title: {previous_job_title}
+  - Start Date: {previous_job_start_date}
+  - End Date: {previous_job_end_date}
+  - Description: {previous_job_description}
 
-    enhanced_achievements = ask_openai(
-        f"Rewrite and structure these achievements into a clean professional bullet list for a resume: {achievements}"
-    )
+- Older Company: {old_company_name}
+  - Job Title: {old_job_title}
+  - Start Date: {old_job_start_date}
+  - End Date: {old_job_end_date}
+  - Description: {old_job_description}
 
-    enhanced_languages = ask_openai(
-        f"Organize these languages into a clean professional list for a resume: {languages}"
-    )
+Education:
+- {first_university_major}, {first_university_name}, {first_university_location}
+- {second_university_major}, {second_university_name}, {second_university_location}
 
-    # Build the structured resume output
-    resume_data = {
-        "full_name": full_name,
-        "current_job_title": current_job_title,
-        "address": address,
-        "phone_number": phone_number,
-        "email": email,
-        "summary": enhanced_summary,
-        "current_company_name": current_company_name,
-        "current_job_start_date": current_job_start_date,
-        "current_job_description": enhanced_current_job,
-        "previous_company_name": previous_company_name,
-        "previous_job_title": previous_job_title,
-        "previous_job_start_date": previous_job_start_date,
-        "previous_job_end_date": previous_job_end_date,
-        "previous_job_description": enhanced_previous_job,
-        "old_company_name": old_company_name,
-        "old_job_title": old_job_title,
-        "old_job_start_date": old_job_start_date,
-        "old_job_end_date": old_job_end_date,
-        "old_job_description": enhanced_old_job,
-        "skills": enhanced_skills,
-        "achievements": enhanced_achievements,
-        "1st_university_major": first_university_major,
-        "1st_university_name": first_university_name,
-        "1st_university_location": first_university_location,
-        "2nd_university_major": second_university_major,
-        "2nd_university_name": second_university_name,
-        "2nd_university_location": second_university_location,
-        "languages": enhanced_languages
-    }
+Skills:
+{skills}
 
-    return jsonify(resume_data)
+Achievements:
+{achievements}
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+Languages:
+{languages}
+
+Instructions:
+- Expand the Professional Summary into 3–4 strong sentences.
+- For each company in Experience, generate 3 impactful bullet points describing key achievements and contributions.
+- Organize Skills into neat bullet points (grouped into technical skills, soft skills if possible).
+- Strengthen the Achievements section to sound result-driven.
+- Format the Languages properly.
+- Keep formatting clean and attractive.
+- Do not mention these instructions in the final output.
+- Write in professional resume tone, English language.
+"""
+
+# Send the prompt to OpenAI
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": "You are an expert resume writer helping clients build outstanding resumes."},
+        {"role": "user", "content": user_data}
+    ],
+    temperature=0.7,
+    max_tokens=2000
+)
+
+generated_resume = response['choices'][0]['message']['content']
