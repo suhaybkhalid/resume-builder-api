@@ -4,7 +4,6 @@ import os
 
 app = Flask(__name__)
 
-# Safely pull OpenAI key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/", methods=["POST"])
@@ -12,9 +11,9 @@ def generate_resume():
     try:
         request_data = request.get_json()
 
-        # Safely get all fields with defaults
-        full_name = request_data.get('full_name', 'Unknown')
-        current_job_title = request_data.get('current_job_title', 'Unknown')
+        # Extract all fields safely
+        full_name = request_data.get('full_name', '')
+        current_job_title = request_data.get('current_job_title', '')
         address = request_data.get('address', '')
         phone_number = request_data.get('phone_number', '')
         email = request_data.get('email', '')
@@ -42,7 +41,15 @@ def generate_resume():
         achievements = request_data.get('achievements', '')
         languages = request_data.get('languages', '')
 
-        # Build the strong prompt
+        # 🚫 Prevent calling OpenAI if key data is missing
+        required_fields = [full_name, current_job_title, email, summary]
+        if not all(required_fields):
+            print("❌ Missing required fields. Skipping OpenAI call.")
+            return jsonify({"error": "Missing required fields"}), 400
+
+        print("📨 Sending resume request to OpenAI...")
+
+        # Create the strong prompt
         user_data = f"""
 Please create a professional and powerful resume using the following details:
 
@@ -98,23 +105,24 @@ Instructions:
 - Do NOT include these instructions in the output.
 """
 
-        # Call OpenAI safely
+        # 🔥 Call OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert professional resume writer."},
+                {"role": "system", "content": "You are a professional resume writer."},
                 {"role": "user", "content": user_data}
             ],
             temperature=0.7,
             max_tokens=2000
         )
 
-        generated_resume = response['choices'][0]['message']['content']
+        print("✅ OpenAI responded successfully.")
 
+        generated_resume = response['choices'][0]['message']['content']
         return jsonify({"resume": generated_resume}), 200
 
     except Exception as e:
-        # If anything fails, return a safe error message
+        print(f"🔥 ERROR: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/", methods=["GET"])
@@ -123,5 +131,3 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
-
-
