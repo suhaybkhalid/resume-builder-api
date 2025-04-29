@@ -147,6 +147,11 @@ Instructions:
 
     # Step 5: Return the generated resume
     return jsonify({"resume": generated_resume})
+  
+@app.route("/", methods=["GET"])
+def generate_resume_get():
+    return generate_resume()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
