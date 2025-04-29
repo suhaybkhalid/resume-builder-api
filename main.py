@@ -12,7 +12,7 @@ def generate_resume():
     try:
         request_data = request.get_json()
 
-        # Extract all fields from the incoming form input
+        # Extract all fields from form input
         full_name = request_data.get('full_name', '')
         current_job_title = request_data.get('current_job_title', '')
         address = request_data.get('address', '')
@@ -42,15 +42,14 @@ def generate_resume():
         achievements = request_data.get('achievements', '')
         languages = request_data.get('languages', '')
 
-        # Validation for critical fields
+        # Validation
         required_fields = [full_name, current_job_title, email, summary]
         if not all(required_fields):
             print("❌ Missing required fields. Skipping OpenAI call.")
             return jsonify({"error": "Missing required fields"}), 400
 
-        print("📨 Sending structured field-by-field request to OpenAI...")
+        print("📨 Sending structured request to OpenAI...")
 
-        # Structured prompt
         user_data = f"""
 You are an expert resume writer.
 
@@ -123,10 +122,9 @@ Languages: {languages}
 VERY IMPORTANT:
 - For **Summary**, write a strong 3-line professional summary.
 - For **each Job Description** (current, previous, old), create **2 to 3 strong bullet points**, NOT a single line.
-- For **Skills**, generate clean bullet points (one per line, not paragraph format).
+- For **Skills**, generate clean bullet points (one per line).
 - For **Achievements**, rephrase to sound executive-level and result-driven.
-- For **Languages**, list clearly and separately (e.g., English - Fluent, Arabic - Native).
-- Only return a clean JSON object, no explanation, no headings, no introduction.
+- For **Languages**, list separately and clearly.
 
 Example for Job Description:
 [
@@ -143,28 +141,34 @@ Example for Skills:
 ]
 """
 
-        # Call OpenAI
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a professional resume writer."},
-                {"role": "user", "content": user_data}
-            ],
-            temperature=0.5,
-            max_tokens=2000
-        )
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a professional resume writer."},
+                    {"role": "user", "content": user_data}
+                ],
+                temperature=0.5,
+                max_tokens=2000,
+                request_timeout=60  # ✅ Timeout added here
+            )
 
-        print("✅ OpenAI responded successfully.")
+            print("✅ OpenAI responded successfully.")
+            resume_json = json.loads(response['choices'][0]['message']['content'])
 
-        # Parse OpenAI JSON text properly
-        resume_json = json.loads(response['choices'][0]['message']['content'])
+            return jsonify(resume_json), 200
 
-        # Return clean JSON directly
-        return jsonify(resume_json), 200
+        except openai.error.Timeout:
+            print("🔥 OpenAI request timed out after 60 seconds.")
+            return jsonify({"error": "OpenAI timeout."}), 504
 
-    except Exception as e:
-        print(f"🔥 ERROR: {e}")
-        return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            print(f"🔥 General ERROR during OpenAI call: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    except Exception as e_outer:
+        print(f"🔥 Outer ERROR in API: {e_outer}")
+        return jsonify({"error": str(e_outer)}), 500
 
 @app.route("/", methods=["GET"])
 def index():
