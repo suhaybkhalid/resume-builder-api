@@ -11,7 +11,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.route("/", methods=["POST"])
 def generate_resume():
     # Step 1: Normally get data from POST (but override for testing)
-    request_data = request.get_json()
+    # request_data = request.get_json()
 
     # 🔥 TEMPORARY Dummy Data for Testing
     request_data = {
