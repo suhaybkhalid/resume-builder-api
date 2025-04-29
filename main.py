@@ -11,7 +11,7 @@ def generate_resume():
     try:
         request_data = request.get_json()
 
-        # Extract all fields safely
+        # Extract all fields from the form input
         full_name = request_data.get('full_name', '')
         current_job_title = request_data.get('current_job_title', '')
         address = request_data.get('address', '')
@@ -41,85 +41,97 @@ def generate_resume():
         achievements = request_data.get('achievements', '')
         languages = request_data.get('languages', '')
 
-        # 🚫 Prevent calling OpenAI if key data is missing
+        # Validate critical fields
         required_fields = [full_name, current_job_title, email, summary]
         if not all(required_fields):
             print("❌ Missing required fields. Skipping OpenAI call.")
             return jsonify({"error": "Missing required fields"}), 400
 
-        print("📨 Sending resume request to OpenAI...")
+        print("📨 Sending structured field-by-field request to OpenAI...")
 
-        # Create the strong prompt
+        # Correct OpenAI prompt
         user_data = f"""
-Please create a professional and powerful resume using the following details:
+You are an expert professional resume builder.
 
-Personal Information:
-- Full Name: {full_name}
-- Professional Title: {current_job_title}
-- Address: {address}
-- Phone Number: {phone_number}
-- Email: {email}
+Your task is:
+- Improve weak fields where needed (summary, job descriptions, skills, achievements, languages)
+- Keep factual fields (full name, phone number, university names) exactly as they are
+- Return only a clean JSON object matching exactly the same field names as input
 
-Professional Summary:
-{summary}
+Format your output exactly like this:
 
-Experience:
-- Current Company: {current_company_name}
-  - Job Title: {current_job_title}
-  - Start Date: {current_job_start_date}
-  - Description: {current_job_description}
+{{
+  "full_name": "...", (copy)
+  "current_job_title": "...", (copy)
+  "address": "...", (copy)
+  "phone_number": "...", (copy)
+  "email": "...", (copy)
+  "summary": "...", (improve and write a professional 3-line paragraph)
+  "current_company_name": "...", (copy)
+  "current_job_start_date": "...", (copy)
+  "current_job_description": "...", (improve into 3 bullet points)
+  "previous_company_name": "...", (copy)
+  "previous_job_title": "...", (copy)
+  "previous_job_start_date": "...", (copy)
+  "previous_job_end_date": "...", (copy)
+  "previous_job_description": "...", (improve into 3 bullet points)
+  "old_company_name": "...", (copy)
+  "old_job_title": "...", (copy)
+  "old_job_start_date": "...", (copy)
+  "old_job_end_date": "...", (copy)
+  "old_job_description": "...", (improve into 3 bullet points)
+  "1st_university_major": "...", (copy)
+  "1st_univeristy_name": "...", (copy)
+  "1st_university_location": "...", (copy)
+  "2nd_university_major": "...", (copy)
+  "2nd_univeristy_name": "...", (copy)
+  "2nd_university_location": "...", (copy)
+  "skills": "...", (improve into bullet points)
+  "achievements": "...", (improve into strong professional sentences)
+  "languages": "...", (polish language format)
+}}
 
-- Previous Company: {previous_company_name}
-  - Job Title: {previous_job_title}
-  - Start Date: {previous_job_start_date}
-  - End Date: {previous_job_end_date}
-  - Description: {previous_job_description}
+User Data:
 
-- Older Company: {old_company_name}
-  - Job Title: {old_job_title}
-  - Start Date: {old_job_start_date}
-  - End Date: {old_job_end_date}
-  - Description: {old_job_description}
-
+Full Name: {full_name}
+Current Job Title: {current_job_title}
+Address: {address}
+Phone Number: {phone_number}
+Email: {email}
+Summary: {summary}
+Current Company: {current_company_name}, Start: {current_job_start_date}, Job Description: {current_job_description}
+Previous Company: {previous_company_name}, {previous_job_title}, {previous_job_start_date}-{previous_job_end_date}, Job Description: {previous_job_description}
+Older Company: {old_company_name}, {old_job_title}, {old_job_start_date}-{old_job_end_date}, Job Description: {old_job_description}
 Education:
-- {first_university_major}, {first_university_name}, {first_university_location}
-- {second_university_major}, {second_university_name}, {second_university_location}
+- {first_university_major} at {first_university_name} ({first_university_location})
+- {second_university_major} at {second_university_name} ({second_university_location})
+Skills: {skills}
+Achievements: {achievements}
+Languages: {languages}
 
-Skills:
-{skills}
-
-Achievements:
-{achievements}
-
-Languages:
-{languages}
-
-Instructions:
-- Expand the Professional Summary into 3–4 strong sentences.
-- For each company, generate 3 impactful bullet points describing key achievements and contributions.
-- Organize Skills into clear neat bullet points (grouped if possible into technical and soft skills).
-- Strengthen the Achievements section to sound result-driven and impressive.
-- Format the Languages properly.
-- Format the full resume cleanly with proper section breaks.
-- Write in professional English language.
-- Do NOT include these instructions in the output.
+IMPORTANT RULES:
+- Only return a pure JSON object (no explanations)
+- Keep field names matching input exactly
+- Write in professional English
 """
 
-        # 🔥 Call OpenAI
+        # OpenAI API call
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a professional resume writer."},
+                {"role": "system", "content": "You are an expert professional resume writer."},
                 {"role": "user", "content": user_data}
             ],
-            temperature=0.7,
+            temperature=0.5,
             max_tokens=2000
         )
 
         print("✅ OpenAI responded successfully.")
 
-        generated_resume = response['choices'][0]['message']['content']
-        return jsonify({"resume": generated_resume}), 200
+        # The resume_json will be a clean JSON object
+        resume_json = response['choices'][0]['message']['content']
+
+        return jsonify({"resume": resume_json}), 200
 
     except Exception as e:
         print(f"🔥 ERROR: {e}")
@@ -131,3 +143,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
