@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import openai
 import os
+import json
 
 app = Flask(__name__)
 
@@ -11,7 +12,7 @@ def generate_resume():
     try:
         request_data = request.get_json()
 
-        # Extract all fields from the form input
+        # Extract all fields from the incoming form input
         full_name = request_data.get('full_name', '')
         current_job_title = request_data.get('current_job_title', '')
         address = request_data.get('address', '')
@@ -41,7 +42,7 @@ def generate_resume():
         achievements = request_data.get('achievements', '')
         languages = request_data.get('languages', '')
 
-        # Validate critical fields
+        # Validation to make sure required fields exist
         required_fields = [full_name, current_job_title, email, summary]
         if not all(required_fields):
             print("❌ Missing required fields. Skipping OpenAI call.")
@@ -49,47 +50,44 @@ def generate_resume():
 
         print("📨 Sending structured field-by-field request to OpenAI...")
 
-        # Correct OpenAI prompt
+        # Structured prompt to OpenAI
         user_data = f"""
-You are an expert professional resume builder.
+You are an expert resume writer.
 
-Your task is:
-- Improve weak fields where needed (summary, job descriptions, skills, achievements, languages)
-- Keep factual fields (full name, phone number, university names) exactly as they are
-- Return only a clean JSON object matching exactly the same field names as input
+Your job:
+- Rewrite and improve weak fields (summary, job descriptions, skills, achievements).
+- Keep factual fields unchanged (full_name, address, phone, email, university names).
 
-Format your output exactly like this:
+Return only a clean JSON object with these exact fields:
 
-{{
-  "full_name": "...", (copy)
-  "current_job_title": "...", (copy)
-  "address": "...", (copy)
-  "phone_number": "...", (copy)
-  "email": "...", (copy)
-  "summary": "...", (improve and write a professional 3-line paragraph)
-  "current_company_name": "...", (copy)
-  "current_job_start_date": "...", (copy)
-  "current_job_description": "...", (improve into 3 bullet points)
-  "previous_company_name": "...", (copy)
-  "previous_job_title": "...", (copy)
-  "previous_job_start_date": "...", (copy)
-  "previous_job_end_date": "...", (copy)
-  "previous_job_description": "...", (improve into 3 bullet points)
-  "old_company_name": "...", (copy)
-  "old_job_title": "...", (copy)
-  "old_job_start_date": "...", (copy)
-  "old_job_end_date": "...", (copy)
-  "old_job_description": "...", (improve into 3 bullet points)
-  "1st_university_major": "...", (copy)
-  "1st_univeristy_name": "...", (copy)
-  "1st_university_location": "...", (copy)
-  "2nd_university_major": "...", (copy)
-  "2nd_univeristy_name": "...", (copy)
-  "2nd_university_location": "...", (copy)
-  "skills": "...", (improve into bullet points)
-  "achievements": "...", (improve into strong professional sentences)
-  "languages": "...", (polish language format)
-}}
+- full_name
+- current_job_title
+- address
+- phone_number
+- email
+- summary
+- current_company_name
+- current_job_start_date
+- current_job_description
+- previous_company_name
+- previous_job_title
+- previous_job_start_date
+- previous_job_end_date
+- previous_job_description
+- old_company_name
+- old_job_title
+- old_job_start_date
+- old_job_end_date
+- old_job_description
+- 1st_university_major
+- 1st_univeristy_name
+- 1st_university_location
+- 2nd_university_major
+- 2nd_univeristy_name
+- 2nd_university_location
+- skills
+- achievements
+- languages
 
 User Data:
 
@@ -99,9 +97,9 @@ Address: {address}
 Phone Number: {phone_number}
 Email: {email}
 Summary: {summary}
-Current Company: {current_company_name}, Start: {current_job_start_date}, Job Description: {current_job_description}
-Previous Company: {previous_company_name}, {previous_job_title}, {previous_job_start_date}-{previous_job_end_date}, Job Description: {previous_job_description}
-Older Company: {old_company_name}, {old_job_title}, {old_job_start_date}-{old_job_end_date}, Job Description: {old_job_description}
+Current Company: {current_company_name}, Start: {current_job_start_date}, Description: {current_job_description}
+Previous Company: {previous_company_name}, {previous_job_title}, {previous_job_start_date} - {previous_job_end_date}, Description: {previous_job_description}
+Older Company: {old_company_name}, {old_job_title}, {old_job_start_date} - {old_job_end_date}, Description: {old_job_description}
 Education:
 - {first_university_major} at {first_university_name} ({first_university_location})
 - {second_university_major} at {second_university_name} ({second_university_location})
@@ -109,17 +107,17 @@ Skills: {skills}
 Achievements: {achievements}
 Languages: {languages}
 
-IMPORTANT RULES:
-- Only return a pure JSON object (no explanations)
-- Keep field names matching input exactly
-- Write in professional English
+VERY IMPORTANT:
+- Only return pure JSON without explanation
+- Maintain clean, structured English
+- Match field names exactly
 """
 
-        # OpenAI API call
+        # Call OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert professional resume writer."},
+                {"role": "system", "content": "You are a professional resume writer."},
                 {"role": "user", "content": user_data}
             ],
             temperature=0.5,
@@ -128,10 +126,11 @@ IMPORTANT RULES:
 
         print("✅ OpenAI responded successfully.")
 
-        # The resume_json will be a clean JSON object
-        resume_json = response['choices'][0]['message']['content']
+        # Parse OpenAI JSON text properly
+        resume_json = json.loads(response['choices'][0]['message']['content'])
 
-        return jsonify({"resume": resume_json}), 200
+        # Return the clean JSON directly
+        return jsonify(resume_json), 200
 
     except Exception as e:
         print(f"🔥 ERROR: {e}")
@@ -143,4 +142,5 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
 
