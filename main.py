@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def format_bullets(items, symbol='●'):
+def format_bullets(items, symbol=''):
     if isinstance(items, list):
         return '\n'.join([f"{symbol} {item}" for item in items])
     return items  # fallback if OpenAI returns plain text
