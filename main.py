@@ -188,7 +188,7 @@ Example for Skills:
             "2nd_university_location": second_university_location,
             "skills": format_bullets(ai_response.get("skills", [])),
             "achievements": ai_response.get("achievements", ""),
-            "languages": format_bullets(ai_response.get("languages", []), symbol="•")
+            "languages": format_bullets(ai_response.get("languages", []), symbol="")
         }
 
         return jsonify(result), 200
